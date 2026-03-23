@@ -45,6 +45,7 @@ export default function Home() {
   const [explanation, setExplanation] = useState('');
 
   // --- Future Simulator State ---
+  const [currentAge, setCurrentAge] = useState<number | ''>('');
   const [simAge, setSimAge] = useState<number | ''>('');
   const [simCity, setSimCity] = useState('');
   const [simScenario, setSimScenario] = useState(SCENARIOS[0]);
@@ -52,6 +53,7 @@ export default function Home() {
   const [simLoading, setSimLoading] = useState(false);
   const [simError, setSimError] = useState('');
   const [simStory, setSimStory] = useState('');
+  const [simFutureYear, setSimFutureYear] = useState<number | null>(null);
 
   // --- Current Tab Handler ---
   const handleCurrentSubmit = async (e: React.FormEvent) => {
@@ -88,11 +90,17 @@ export default function Home() {
   // --- Future Tab Handler ---
   const handleSimulateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!simCity.trim() || !simAge) return;
+    if (!simCity.trim() || !simAge || !currentAge || simAge <= currentAge) {
+      if (typeof simAge === 'number' && typeof currentAge === 'number' && simAge <= currentAge) {
+        setSimError('Future Age must be greater than Current Age.');
+      }
+      return;
+    }
 
     setSimLoading(true);
     setSimError('');
     setSimStory('');
+    setSimFutureYear(null);
 
     const trajectoryLabel = TRAJECTORIES.find(t => t.value === simTrajectory)?.label;
 
@@ -101,7 +109,8 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          age: simAge,
+          currentAge: currentAge,
+          futureAge: simAge,
           city: simCity,
           scenario: simScenario,
           trajectory: trajectoryLabel,
@@ -111,6 +120,7 @@ export default function Home() {
       if (!res.ok) throw new Error('Failed to generate simulation. Please check API keys.');
       const json = await res.json();
       setSimStory(json.story);
+      setSimFutureYear(json.futureYear);
     } catch (err: any) {
       setSimError(err.message || 'Something went wrong.');
     } finally {
@@ -136,7 +146,7 @@ export default function Home() {
           className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === 'current' 
               ? 'bg-[var(--color-accent)] text-white shadow-lg' 
-              : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-border)]' // Note: This is an intentional subtle visual bug, it should probably be hover:bg-[var(--color-bg-card)] but it works
+              : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-border)]'
           }`}
         >
           Current Focus
@@ -241,12 +251,25 @@ export default function Home() {
             <form onSubmit={handleSimulateSubmit} className="flex flex-col gap-6">
               
               <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 md:max-w-[150px]">
+                <div className="flex-1 md:max-w-[120px]">
+                  <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Current Age</label>
+                  <input
+                    type="number"
+                    min="1" max="120"
+                    placeholder="e.g. 15"
+                    value={currentAge}
+                    onChange={(e) => setCurrentAge(e.target.valueAsNumber || '')}
+                    className="w-full bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                    required
+                  />
+                </div>
+
+                <div className="flex-1 md:max-w-[120px]">
                   <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-2">Future Age</label>
                   <input
                     type="number"
                     min="1" max="120"
-                    placeholder="e.g. 25"
+                    placeholder="e.g. 45"
                     value={simAge}
                     onChange={(e) => setSimAge(e.target.valueAsNumber || '')}
                     className="w-full bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
@@ -301,7 +324,7 @@ export default function Home() {
               <div className="flex justify-center mt-2">
                 <button
                   type="submit"
-                  disabled={simLoading || !simCity.trim() || !simAge}
+                  disabled={simLoading || !simCity.trim() || !simAge || !currentAge || simAge <= currentAge}
                   className="w-full md:w-auto bg-purple-600 hover:bg-purple-500 text-white font-semibold py-3 px-10 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {simLoading ? 'Simulating...' : 'Glimpse the Future'}
@@ -322,7 +345,7 @@ export default function Home() {
               <div className="flex items-start gap-4">
                 <div className="bg-purple-500 text-white p-2 rounded-lg shrink-0">🔮</div>
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-3">Life at Age {simAge}</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">Life in {simFutureYear} (At Age {simAge})</h3>
                   <p className="text-purple-100/90 leading-relaxed text-lg whitespace-pre-wrap">{simStory}</p>
                 </div>
               </div>
