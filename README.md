@@ -16,7 +16,7 @@ Instead of overwhelming users with complex charts or confusing scientific jargon
 
 ### 2. 🔍 Research & Comparison Tools
 - **Location Comparison:** A dedicated side-by-side split screen where users can query two different cities simultaneously to compare their environmental metrics.
-- **Historical Trend Chart:** A 7-day look-back line chart (built with Recharts) visualizing the recent fluctuations in Temperature, AQI, and Humidity.
+- **Historical Trend Chart:** A 7-day look-back line chart (built with Recharts) visualizing **real** recent fluctuations in Temperature, AQI, and Humidity. History is pulled from the free [Open-Meteo](https://open-meteo.com/) archive (weather + air quality), so it works even without any API keys — the chart clearly badges whether it is showing live history or an estimated fallback.
 - **Search History & Bookmarks:** Automatically saves the last 20 queries locally. Access them via a slide-out drawer, and "Pin" favorite locations to keep them forever.
 - **Data Export Suite:** Download raw environmental data and AI explanations as `CSV` or `JSON`, or generate a beautifully formatted `PDF` report.
 
@@ -42,7 +42,7 @@ Instead of overwhelming users with complex charts or confusing scientific jargon
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) & Vanilla CSS Modules
 - **Language:** TypeScript
 - **AI Integration:** [OpenAI API](https://openai.com/) & Vercel AI SDK
-- **Data APIs:** OpenWeatherMap, World Air Quality Index (WAQI)
+- **Data APIs:** OpenWeatherMap, World Air Quality Index (WAQI), Open-Meteo (key-free historical archive)
 - **Components:** Pigeon-Maps (Mapping), Recharts (Data Visualization), React-Markdown
 
 ---

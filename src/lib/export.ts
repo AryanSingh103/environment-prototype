@@ -207,7 +207,7 @@ export function exportPDF(
   </div>
 
   <div class="footer">
-    What's Happening Around Me? · Powered by OpenWeatherMap, WAQI, and OpenAI
+    What's Happening Around Me? · Powered by OpenWeatherMap, WAQI, Open-Meteo, and OpenAI
   </div>
 </body>
 </html>`;

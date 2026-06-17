@@ -1,7 +1,8 @@
 'use client';
 
 import { EnvironmentData } from '@/types';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchHistory } from '@/lib/api';
 import {
   LineChart,
   Line,
@@ -17,7 +18,17 @@ interface HistoricalTrendChartProps {
   currentData: EnvironmentData;
 }
 
-// Generate realistic-looking 7-day historical data based on current conditions
+interface DayPoint {
+  name: string;
+  date: string;
+  Temperature: number;
+  AQI: number;
+  Humidity: number;
+  WindSpeed: number;
+}
+
+// Fallback: synthesize a plausible 7-day series anchored to current conditions.
+// Only used when real history is unavailable (e.g. demo mode with no coordinates).
 function generateHistoricalData(current: EnvironmentData) {
   const data = [];
   const now = new Date();
@@ -71,7 +82,50 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function HistoricalTrendChart({ currentData }: HistoricalTrendChartProps) {
-  const data = useMemo(() => generateHistoricalData(currentData), [currentData]);
+  const fallback = useMemo(() => generateHistoricalData(currentData), [currentData]);
+  const [realData, setRealData] = useState<DayPoint[] | null>(null);
+  const [isReal, setIsReal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const { lat, lon } = currentData;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // No coordinates (e.g. demo mode without API keys) → keep the estimated series.
+    if (lat === undefined || lon === undefined) {
+      setRealData(null);
+      setIsReal(false);
+      return;
+    }
+
+    setLoading(true);
+    fetchHistory(lat, lon)
+      .then((res) => {
+        if (cancelled) return;
+        if (Array.isArray(res?.history) && res.history.length > 0) {
+          setRealData(res.history);
+          setIsReal(true);
+        } else {
+          setRealData(null);
+          setIsReal(false);
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRealData(null);
+        setIsReal(false);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lat, lon]);
+
+  const data = realData ?? fallback;
 
   return (
     <div className="w-full h-80 bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded-2xl p-4 md:p-6 animate-fade-in" style={{ animationDelay: '500ms' }}>
@@ -79,11 +133,17 @@ export function HistoricalTrendChart({ currentData }: HistoricalTrendChartProps)
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <span>📈</span> 7-Day Trend
         </h3>
-        <span className="text-xs font-medium bg-[var(--color-bg-card)] border border-[var(--color-border)] text-[var(--color-text-muted)] px-2 py-1 rounded-md">
-          Estimated Past Data
+        <span
+          className={`text-xs font-medium border px-2 py-1 rounded-md transition-colors ${
+            isReal
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+              : 'bg-[var(--color-bg-card)] border-[var(--color-border)] text-[var(--color-text-muted)]'
+          }`}
+        >
+          {loading ? 'Loading history…' : isReal ? '✓ Real History' : 'Estimated Past Data'}
         </span>
       </div>
-      
+
       <div className="w-full h-[calc(100%-40px)]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart

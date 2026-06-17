@@ -127,3 +127,10 @@ export async function fetchGeocode(lat: number, lon: number) {
   );
   return res.json();
 }
+
+export async function fetchHistory(lat: number, lon: number) {
+  const res = await fetchWithRetry(
+    `/api/history?lat=${lat}&lon=${lon}`
+  );
+  return res.json();
+}
